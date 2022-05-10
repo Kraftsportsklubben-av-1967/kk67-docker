@@ -1,0 +1,16 @@
+version: "3"
+
+services:
+  kk67_be:
+    image: TODO // Python image
+    hostname: kk67_be
+    container_name: kk67_be
+    working_dir: /usr/local/python/src/app
+    entrypoint: ["bash", "-c"]
+
+  kk67_fe:
+    image: TODO // node 14 image
+    hostname: kk67_fe
+    container_name: kk67_fe
+    working_dir: /usr/local/node/src/app
+    entrypoint: ["bash", "-c"]

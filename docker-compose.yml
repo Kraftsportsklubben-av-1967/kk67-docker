@@ -2,15 +2,25 @@ version: "3"
 
 services:
   kk67_be:
-    image: TODO // Python image
+    build: ./webroot/kk67-backend
     hostname: kk67_be
     container_name: kk67_be
-    working_dir: /usr/local/python/src/app
-    entrypoint: ["bash", "-c"]
+    working_dir: /usr/src/app
+    ports:
+      - "5000:5000"
+    volumes:
+      - ${BE_APP_PATH}:/usr/src/app:rw
 
   kk67_fe:
-    image: TODO // node 14 image
+    image: node:14
     hostname: kk67_fe
     container_name: kk67_fe
-    working_dir: /usr/local/node/src/app
-    entrypoint: ["bash", "-c"]
+    command: bash -c "yarn install && yarn dev:host"
+    environment:
+      - NODE_ENV=development
+    working_dir: /usr/src/app
+    volumes:
+      - ${FE_APP_PATH}:/usr/src/app:rw
+    ports:
+      - "3000:3000"
+      - "2000:2000"

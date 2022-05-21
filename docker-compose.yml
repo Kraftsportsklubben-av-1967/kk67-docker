@@ -6,8 +6,7 @@ services:
     hostname: kk67_be
     container_name: kk67_be
     working_dir: /usr/src/app
-    ports:
-      - "5000:5000"
+    network_mode: "host"
     volumes:
       - ${BE_APP_PATH}:/usr/src/app:rw
 
@@ -19,8 +18,6 @@ services:
     environment:
       - NODE_ENV=development
     working_dir: /usr/src/app
+    network_mode: "host"
     volumes:
       - ${FE_APP_PATH}:/usr/src/app:rw
-    ports:
-      - "3000:3000"
-      - "2000:2000"

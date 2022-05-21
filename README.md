@@ -25,6 +25,6 @@ KK-67 website uses the following services:
 
 ## Why docker-compose?
 
-Using docker-compose allows us to use virtual machines to load all dependencies and development environment without interfering with our own personal setup. It recreates an identical environment for everyone using the `docker-compose.yml` config file.
+Using docker-compose allows us to use virtual machines to load all dependencies and development environment without interfering with our own personal setup. It recreates an identical environment for everyone using the `docker-compose.yml` config file. As for members of KK, this repository is mainly ment for development purposes. How the frontend and backend is actually is deployed is unfortunatley without docker, but theres nothing we can do about that currently due to our ISP...
 
 Check out this [video](https://www.youtube.com/watch?v=Gjnup-PuquQ&ab_channel=Fireship) to learn more

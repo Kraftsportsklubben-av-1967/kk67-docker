@@ -19,11 +19,17 @@ You will need docker-compose to be able to use this repository
 
 ## Setup
 
-1. Create a `webroot` folder
+1. Clone the repo 
 
-2. Clone the above repositories into `./webroot`
+```sh
+$ git clone git@github.com:Kraftsportsklubben-av-1967/kk67-docker.git
+```
 
-3. Build the compose `docker-compose up --build`
+2. Create a `webroot` folder
+
+3. Clone the above repositories into `./webroot`
+
+4. Build the compose `docker-compose up --build`
 
 > After this is done you can simply use `docker-compose up`
 

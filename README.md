@@ -27,15 +27,15 @@ $ git clone git@github.com:Kraftsportsklubben-av-1967/kk67-docker.git
 
 2. Create a `webroot` folder
 
-3. Clone the above repositories into `./webroot`
+3. Clone the above repositories into `./webroot` and follow their guides to set them up with docker-compose
 
 4. Build the compose `docker-compose up --build`
 
 > After this is done you can simply use `docker-compose up`
 
 1. The services will be running:
-   1. KK BE: `http://localhost:5000`
-   2. KK FE: `http://localhost:3000`
+   1. Backend:  `http://localhost:5000`
+   2. Frontend: `http://localhost:3000`
 
 > Additional outputs will be displayed in your terminal. Remember to close this once you're done.
 

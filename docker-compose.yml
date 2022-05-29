@@ -6,7 +6,8 @@ services:
     hostname: kk67_be
     container_name: kk67_be
     working_dir: /usr/src/app
-    network_mode: "host"
+    ports:
+      - "5000:5000"
     volumes:
       - ${BE_APP_PATH}:/usr/src/app:rw
 
@@ -17,7 +18,9 @@ services:
     command: bash -c "yarn install && yarn dev:host"
     environment:
       - NODE_ENV=development
+    ports:
+      - "3000:3000"
+      - "2000:3000"
     working_dir: /usr/src/app
-    network_mode: "host"
     volumes:
       - ${FE_APP_PATH}:/usr/src/app:rw

@@ -24,3 +24,14 @@ services:
     working_dir: /usr/src/app
     volumes:
       - ${FE_APP_PATH}:/usr/src/app:rw
+  kk67_php:
+    build: ./webroot/kk67-backend-php
+    hostname: kk67_php
+    container_name: kk67_php
+    working_dir: /usr/src/app
+    env_file:
+      - ./webroot/kk67-backend-php/.env
+    ports:
+      - 4000:4000
+    volumes:
+      - ${BE_PHP_APP_PATH}:/usr/src/app:rw

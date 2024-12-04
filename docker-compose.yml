@@ -1,5 +1,3 @@
-version: "3"
-
 services:
   kk67_be:
     build: ./webroot/kk67-backend
@@ -10,6 +8,8 @@ services:
       - "5000:5000"
     volumes:
       - ${BE_APP_PATH}:/usr/src/app:rw
+    profiles:
+      - "dev"
 
   kk67_fe:
     image: node:14
@@ -19,8 +19,8 @@ services:
     environment:
       - NODE_ENV=development
     ports:
-      - "3000:3000"
-      - "2000:2000"
+      - "${FE_PORT}:${FE_PORT}"
+      - "${FE_PROXY_PORT}:${FE_PROXY_PORT}"
     working_dir: /usr/src/app
     volumes:
       - ${FE_APP_PATH}:/usr/src/app:rw
@@ -32,6 +32,6 @@ services:
     env_file:
       - ./webroot/kk67-backend-php/.env
     ports:
-      - 4000:4000
+      - ${BE_PHP_PORT}:${BE_PHP_PORT}
     volumes:
       - ${BE_PHP_APP_PATH}:/usr/src/app:rw

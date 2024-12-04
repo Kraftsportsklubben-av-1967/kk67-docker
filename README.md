@@ -9,6 +9,8 @@ KK-67 website uses the following services:
 
 - [KK-67 Frontend](https://github.com/Kraftsportsklubben-av-1967/kk67-frontend)
 - [KK-67 Backend](https://github.com/Kraftsportsklubben-av-1967/kk67-backend)
+- [KK-67 Backend (PHP version)](https://github.com/Kraftsportsklubben-av-1967/kk67-backend-php)
+
 
 ## Prerequesits
 
@@ -33,7 +35,7 @@ $ git clone git@github.com:Kraftsportsklubben-av-1967/kk67-docker.git
 > After this is done you can simply use `docker-compose up`
 
 1. The services will be running:
-   1. Backend: `http://localhost:5000`
+   1. Backend: `http://localhost:4000`
    2. Frontend: `http://localhost:3000`
 
 > Additional outputs will be displayed in your terminal. Remember to close this once you're done.

@@ -12,10 +12,10 @@ services:
       - "dev"
 
   kk67_fe:
-    image: node:14
+    image: node:20-alpine
     hostname: kk67_fe
     container_name: kk67_fe
-    command: bash -c "yarn install && yarn dev:host"
+    command:  sh -c "corepack enable && yarn install && yarn dev:host"
     environment:
       - NODE_ENV=development
     ports:
@@ -25,6 +25,7 @@ services:
     volumes:
       - ${FE_APP_PATH}:/usr/src/app:rw
   kk67_php:
+    image: kk67_php:latest
     build: ./webroot/kk67-backend-php
     hostname: kk67_php
     container_name: kk67_php

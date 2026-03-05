@@ -20,17 +20,20 @@ You will need docker-compose to be able to use this repository
 
 ## Setup
 
-1. Clone the repo
+1. Clone the repo with submodules
 
 ```sh
-$ git clone git@github.com:Kraftsportsklubben-av-1967/kk67-docker.git
+$ git clone --recurse-submodules git@github.com:Kraftsportsklubben-av-1967/kk67-docker.git
 ```
 
-2. Create a `webroot` folder
+> If you already cloned without `--recurse-submodules`, run:
+> ```sh
+> $ git submodule update --init --recursive
+> ```
 
-3. Clone the above repositories into `./webroot` and follow their guides to set them up with docker-compose
+2. Follow the setup guides in each submodule to configure their `.env` files
 
-4. Build the compose `docker-compose up --build`
+3. Build the compose `docker-compose up --build`
 
 > After this is done you can simply use `docker-compose up`
 

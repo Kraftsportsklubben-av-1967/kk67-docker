@@ -1,0 +1,6 @@
+[submodule "webroot/kk67-frontend"]
+	path = webroot/kk67-frontend
+	url = git@github.com:Kraftsportsklubben-av-1967/kk67-frontend.git
+[submodule "webroot/kk67-backend-php"]
+	path = webroot/kk67-backend-php
+	url = git@github.com:Kraftsportsklubben-av-1967/kk67-backend-php.git

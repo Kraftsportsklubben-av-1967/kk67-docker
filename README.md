@@ -38,8 +38,9 @@ $ git clone --recurse-submodules git@github.com:Kraftsportsklubben-av-1967/kk67
 > After this is done you can simply use `docker-compose up`
 
 1. The services will be running:
-   1. Backend: `http://localhost:4000`
-   2. Frontend: `http://localhost:3000`
+   1. Frontend: `http://localhost:3000` (configurable via `FE_PORT`)
+   2. PHP backend: `http://localhost:4000` (configurable via `BE_PHP_PORT`)
+   3. Flask backend: `http://localhost:5000` (enabled by the `dev` compose profile, e.g. `docker compose --profile dev up`)
 
 > Additional outputs will be displayed in your terminal. Remember to close this once you're done.
 

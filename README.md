@@ -42,7 +42,20 @@ $ git clone --recurse-submodules git@github.com:Kraftsportsklubben-av-1967/kk67
    2. PHP backend: `http://localhost:4000` (configurable via `BE_PHP_PORT`)
    3. Flask backend: `http://localhost:5000` (enabled by the `dev` compose profile, e.g. `docker compose --profile dev up`)
 
+`FE_PORT` and `BE_PHP_PORT` change host ports only; the containers listen on
+3000 and 4000. If you change the PHP host port, update the frontend's development
+backend URL too. `FE_PROXY_PORT` must match the frontend's `VITE_PROXY_PORT`.
+
 > Additional outputs will be displayed in your terminal. Remember to close this once you're done.
+
+## Checks
+
+With Python 3 and Docker Compose installed, check the port wiring without
+starting containers:
+
+```sh
+python -m unittest discover -s tests
+```
 
 ## Why docker-compose?
 

@@ -15,11 +15,11 @@ services:
     image: node:20-alpine
     hostname: kk67_fe
     container_name: kk67_fe
-    command:  sh -c "corepack enable && yarn install && yarn dev:host"
+    command:  sh -c "corepack enable && yarn install && yarn dev:host --port 3000 --strictPort"
     environment:
       - NODE_ENV=development
     ports:
-      - "${FE_PORT}:${FE_PORT}"
+      - "${FE_PORT}:3000"
       - "${FE_PROXY_PORT}:${FE_PROXY_PORT}"
     working_dir: /usr/src/app
     volumes:
@@ -33,6 +33,6 @@ services:
     env_file:
       - ./webroot/kk67-backend-php/.env
     ports:
-      - ${BE_PHP_PORT}:${BE_PHP_PORT}
+      - "${BE_PHP_PORT}:4000"
     volumes:
       - ${BE_PHP_APP_PATH}:/usr/src/app:rw

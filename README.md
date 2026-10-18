@@ -31,9 +31,12 @@ $ git clone --recurse-submodules git@github.com:Kraftsportsklubben-av-1967/kk67
 > $ git submodule update --init --recursive
 > ```
 
-2. Follow the setup guides in each submodule to configure their `.env` files
+2. Copy `.env.example` to `.env` in the repository root. This local file is
+   Git-ignored; keep secrets out of `.env.example`.
 
-3. Build the compose `docker-compose up --build`
+3. Follow the setup guides in each submodule to configure their `.env` files
+
+4. Build the compose `docker-compose up --build`
 
 > After this is done you can simply use `docker-compose up`
 
@@ -57,51 +60,24 @@ starting containers:
 python -m unittest discover -s tests
 ```
 
-## Frontend deployment (FTPS)
+## Deployments
 
-`scripts\upload-frontend.ps1` builds `webroot\kk67-frontend` with `yarn build`
-and uploads the **contents** of its `dist` folder. The default destination is
-`ftp.c9ry3m6by.service.one`, directory
-`c9ry3m6by_kk67ctcg/webroots/r1058728`, relative to the FTP login directory.
-The destination must already exist.
+Each application owns its upload scripts, tests and GitHub Actions workflow:
 
-Use PowerShell 7, Node.js, Yarn, and `curl.exe` with FTP/FTPS support. Install
-the frontend dependencies first if needed:
+- [Frontend deployment](https://github.com/Kraftsportsklubben-av-1967/kk67-frontend#production-ci)
+- [PHP backend deployment](https://github.com/Kraftsportsklubben-av-1967/kk67-backend-php)
 
-```powershell
-yarn --cwd .\webroot\kk67-frontend install --frozen-lockfile
-```
+Their CI checks out only the application itself; it does not clone this Docker
+repository or fetch deployment scripts from another project. Production uploads
+run after merges or pushes to frontend `master` and PHP backend `main`.
 
-Build and preview the destination and file count without connecting or asking
-for credentials:
+Existing FTP credentials can stay in this repository's private, ignored `.env`.
+Pass that file's path with the application uploader's `-EnvFilePath` option;
+there is no need to copy the password. Explicit `-Credential` takes precedence.
+CI uses encrypted application-repository secrets instead of a local file.
 
-```powershell
-pwsh -File .\scripts\upload-frontend.ps1 -WhatIf
-```
-
-Build and upload to the live site:
-
-```powershell
-pwsh -File .\scripts\upload-frontend.ps1
-```
-
-The script prompts securely for the FTP username and password. Credentials are
-passed to curl through standard input, never saved in the repository or placed
-in curl's process arguments. For automation, pass a `PSCredential` obtained from
-your secret store using `-Credential`. Explicit FTPS is required, with certificate
-verification enabled; there is no fallback to unencrypted FTP.
-
-Use `-SkipBuild` to upload an existing `dist`, or combine it with `-WhatIf` to
-preview without rebuilding. `-FtpHost` and `-RemotePath` override the destination.
-The script creates asset subdirectories, overwrites matching files, and uploads
-`index.html` last. It **never deletes remote files**, so backend files and
-separately uploaded media absent from the build are preserved. A local video
-included in `dist` will be uploaded along with the other frontend assets.
-
-Only build output is uploaded: frontend source, `.env`, the backend, and the
-frontend root's `.htaccess` are not included. Keep the server's existing SPA
-routing configuration. Upload failures stop deployment, but files already
-uploaded are not rolled back; the upload is not atomic.
+Keep `.env` and editor backups private. Saved local passwords are plaintext;
+never commit them or put FTP secrets in `VITE_` variables.
 
 ## Why docker-compose?
 

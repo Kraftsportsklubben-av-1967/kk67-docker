@@ -65,8 +65,9 @@ python -m unittest discover -s tests
 `scripts\upload-frontend.ps1` builds `webroot\kk67-frontend` with `yarn build`
 and uploads the **contents** of its `dist` folder. The default destination is
 `ftp.c9ry3m6by.service.one`, directory
-`c9ry3m6by_kk67ctcg/webroots/r1058728`, relative to the FTP login directory.
-The destination must already exist.
+`webroots/r1058728`, relative to the FTP login directory. The hosting file
+manager's account-name prefix is not part of the FTP path. The destination
+must already exist.
 
 Use PowerShell 7, Node.js 20.12 or newer, Yarn, and `curl.exe` with FTP/FTPS
 support. Install the frontend dependencies first if needed:
@@ -98,8 +99,9 @@ FTP_PASSWORD='your-ftp-password'
 
 Quote values containing spaces, `#`, or `$`. The script uses Node's built-in
 dotenv parser without executing the file or expanding variables. `.env` is
-Git-ignored and no longer tracked, but stores the password as **plaintext**;
-keep it private. Never put these secrets in `VITE_` variables.
+Git-ignored and no longer tracked; its Vim backup/undo files are ignored too.
+The password is stored as **plaintext** locally; keep it private. Never put
+these secrets in `VITE_` variables.
 
 An explicit `-Credential` takes precedence over `.env`. If both saved values are
 empty or absent, the script prompts securely; if only one is set, it stops with

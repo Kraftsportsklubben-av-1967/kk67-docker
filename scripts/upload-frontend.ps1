@@ -6,7 +6,7 @@ param(
     [string] $FtpHost = 'ftp.c9ry3m6by.service.one',
 
     [ValidateNotNullOrEmpty()]
-    [string] $RemotePath = 'c9ry3m6by_kk67ctcg/webroots/r1058728',
+    [string] $RemotePath = 'webroots/r1058728',
 
     [PSCredential] $Credential,
 
@@ -118,7 +118,7 @@ $escapedCredential = $escapedCredential.Replace("`t", '\t').Replace("`v", '\v')
 $curlConfig = 'user = "' + $escapedCredential + '"'
 $curlOptions = @(
     '--disable', '--config', '-', '--silent', '--show-error',
-    '--ssl-reqd', '--ftp-ssl-auth', 'TLS', '--proto', '=ftp', '--globoff',
+    '--ssl-reqd', '--proto', '=ftp', '--globoff',
     '--connect-timeout', '15', '--max-time', '1800'
 )
 

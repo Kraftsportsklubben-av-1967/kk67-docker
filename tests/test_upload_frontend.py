@@ -10,14 +10,35 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 PWSH = shutil.which("pwsh")
 NODE = shutil.which("node")
+CURL = shutil.which("curl.exe") or shutil.which("curl")
 DESTINATION = (
     "ftp://ftp.c9ry3m6by.service.one/"
-    "c9ry3m6by_kk67ctcg/webroots/r1058728/"
+    "webroots/r1058728/"
 )
 
 
 def ps_quote(value):
     return "'" + str(value).replace("'", "''") + "'"
+
+
+@unittest.skipUnless(
+    shutil.which("git") and ROOT.joinpath(".git").exists(),
+    "A Git checkout is required for secret-file ignore checks",
+)
+class SecretFileIgnoreTests(unittest.TestCase):
+    def test_local_credentials_and_editor_backups_are_ignored(self):
+        result = subprocess.run(
+            ["git", "check-ignore", "--no-index", "--stdin", "-z"],
+            input="\0".join((".env", ".env.local", ".env~", "..env.un~", ".env.example", "")),
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(
+            set(result.stdout.rstrip("\0").split("\0")),
+            {".env", ".env.local", ".env~", "..env.un~"},
+        )
 
 
 @unittest.skipUnless(PWSH, "PowerShell 7 is required for upload-script tests")
@@ -239,7 +260,6 @@ $global:KK67TestCredential = $credential
             arguments = call["arguments"]
             self.assertEqual(arguments[:3], ["--disable", "--config", "-"])
             self.assertIn("--ssl-reqd", arguments)
-            self.assertIn("TLS", arguments)
             self.assertIn("=ftp", arguments)
             self.assertNotIn("--insecure", arguments)
             self.assertNotIn("--quote", arguments)
@@ -251,6 +271,23 @@ $global:KK67TestCredential = $credential
         self.assertNotIn(self.password, result.stdout + result.stderr)
         self.assertIn("Upload complete: 4", result.stdout)
         self.assertFalse(self.build_log.exists())
+
+    @unittest.skipUnless(CURL, "curl is required for native option validation")
+    def test_real_curl_accepts_upload_options_without_connecting(self):
+        result = self.invoke_script()
+        self.assert_success(result)
+        for call in self.curl_calls():
+            with self.subTest(operation=call["arguments"][-1]):
+                native = subprocess.run(
+                    [CURL, *call["arguments"], "--version"],
+                    input=call["config"],
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                )
+                self.assertEqual(native.returncode, 0, native.stderr)
+                self.assertTrue(native.stdout.startswith("curl "))
+                self.assertNotIn(self.password, native.stdout + native.stderr)
 
     def test_failed_build_does_not_upload_an_existing_stale_build(self):
         result = self.invoke_script("", KK67_TEST_BUILD_EXIT="1")

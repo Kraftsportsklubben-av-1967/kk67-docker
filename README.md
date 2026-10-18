@@ -57,6 +57,52 @@ starting containers:
 python -m unittest discover -s tests
 ```
 
+## Frontend deployment (FTPS)
+
+`scripts\upload-frontend.ps1` builds `webroot\kk67-frontend` with `yarn build`
+and uploads the **contents** of its `dist` folder. The default destination is
+`ftp.c9ry3m6by.service.one`, directory
+`c9ry3m6by_kk67ctcg/webroots/r1058728`, relative to the FTP login directory.
+The destination must already exist.
+
+Use PowerShell 7, Node.js, Yarn, and `curl.exe` with FTP/FTPS support. Install
+the frontend dependencies first if needed:
+
+```powershell
+yarn --cwd .\webroot\kk67-frontend install --frozen-lockfile
+```
+
+Build and preview the destination and file count without connecting or asking
+for credentials:
+
+```powershell
+pwsh -File .\scripts\upload-frontend.ps1 -WhatIf
+```
+
+Build and upload to the live site:
+
+```powershell
+pwsh -File .\scripts\upload-frontend.ps1
+```
+
+The script prompts securely for the FTP username and password. Credentials are
+passed to curl through standard input, never saved in the repository or placed
+in curl's process arguments. For automation, pass a `PSCredential` obtained from
+your secret store using `-Credential`. Explicit FTPS is required, with certificate
+verification enabled; there is no fallback to unencrypted FTP.
+
+Use `-SkipBuild` to upload an existing `dist`, or combine it with `-WhatIf` to
+preview without rebuilding. `-FtpHost` and `-RemotePath` override the destination.
+The script creates asset subdirectories, overwrites matching files, and uploads
+`index.html` last. It **never deletes remote files**, so backend files and
+separately uploaded media absent from the build are preserved. A local video
+included in `dist` will be uploaded along with the other frontend assets.
+
+Only build output is uploaded: frontend source, `.env`, the backend, and the
+frontend root's `.htaccess` are not included. Keep the server's existing SPA
+routing configuration. Upload failures stop deployment, but files already
+uploaded are not rolled back; the upload is not atomic.
+
 ## Why docker-compose?
 
 Using docker-compose allows us to use virtual machines to load all dependencies and development environment without interfering with our own personal setup. It recreates an identical environment for everyone using the `docker-compose.yml` config file. As for members of KK, this repository is mainly ment for development purposes. How the frontend and backend is actually is deployed is unfortunatley without docker, but theres nothing we can do about that currently due to our ISP...

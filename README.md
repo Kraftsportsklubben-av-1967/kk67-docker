@@ -121,6 +121,42 @@ frontend root's `.htaccess` are not included. Keep the server's existing SPA
 routing configuration. Upload failures stop deployment, but files already
 uploaded are not rolled back; the upload is not atomic.
 
+## PHP backend deployment (FTPS)
+
+`scripts\upload-backend-php.ps1` packages the PHP backend from
+`webroot\kk67-backend-php` for `webroots/r1058768` on the same FTP host.
+It uploads only `src\index.php` and `src\loader.php`, flattened into the
+document root, after PHP syntax checks and the application's smoke test.
+The current application has no Composer dependencies; adding them requires
+updating the explicit package and its tests first.
+
+Use PowerShell 7, PHP 8.3 or newer, and `curl.exe`. Saved root `.env` credentials
+use the same Node.js parser and precedence described above.
+
+```powershell
+pwsh -File .\scripts\upload-backend-php.ps1 -WhatIf
+pwsh -File .\scripts\upload-backend-php.ps1
+```
+
+`-WhatIf` still creates and checks a temporary local package, then removes it,
+without reading FTP credentials or connecting. `-AppPath` selects another
+backend checkout. Server-side settings, `.env`, rewrite rules, logs and writable
+data are not uploaded or deleted. `index.php` is uploaded last; uploads are not
+atomic and are not rolled back on failure.
+
+## Merge-triggered deployments
+
+Deployment workflows live in each application's repository, not this Docker
+repository. They check pull requests and deploy only after a merge or push to the
+application's default branch: frontend `master`, PHP backend `main`. Both use the
+shared FTPS transport in `scripts\ftps.psm1`, with this repository pinned to a
+reviewed commit.
+
+Store `FTP_USERNAME` and `FTP_PASSWORD` as encrypted GitHub Actions secrets in each
+application repository. The frontend also needs `VITE_GOOGLE_API_KEY` for its
+production build. CI passes credentials explicitly; it never commits or uploads
+the local `.env`. New merges do not cancel an active production upload.
+
 ## Why docker-compose?
 
 Using docker-compose allows us to use virtual machines to load all dependencies and development environment without interfering with our own personal setup. It recreates an identical environment for everyone using the `docker-compose.yml` config file. As for members of KK, this repository is mainly ment for development purposes. How the frontend and backend is actually is deployed is unfortunatley without docker, but theres nothing we can do about that currently due to our ISP...

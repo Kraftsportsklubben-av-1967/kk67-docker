@@ -51,6 +51,10 @@ class FrontendUploadTests(unittest.TestCase):
         self.script = self.root.joinpath("scripts", "upload-frontend.ps1")
         self.script.parent.mkdir()
         shutil.copyfile(ROOT.joinpath("scripts", self.script.name), self.script)
+        shutil.copyfile(
+            ROOT.joinpath("scripts", "ftps.psm1"),
+            self.script.with_name("ftps.psm1"),
+        )
         self.frontend = self.root.joinpath("webroot", "kk67-frontend")
         self.dist = self.frontend.joinpath("dist")
         self.dist.joinpath("assets").mkdir(parents=True)
@@ -157,7 +161,7 @@ $global:KK67TestCredential = $credential
         result = self.invoke_script("-SkipBuild -WhatIf", credential=False)
         self.assert_success(result)
         self.assertIn(DESTINATION, result.stdout)
-        self.assertIn("4 frontend files", result.stdout)
+        self.assertIn("4 files", result.stdout)
         self.assertNotIn("Upload complete", result.stdout)
         self.assertEqual(self.curl_calls(), [])
         self.assertFalse(self.build_log.exists())
@@ -300,6 +304,18 @@ $global:KK67TestCredential = $credential
         result = self.invoke_script()
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("No frontend build found", result.stderr)
+        self.assertEqual(self.curl_calls(), [])
+
+    def test_symbolic_link_in_build_prevents_upload(self):
+        try:
+            self.dist.joinpath("assets", "linked-env.txt").symlink_to(
+                self.frontend.joinpath(".env")
+            )
+        except OSError as error:
+            self.skipTest(f"Cannot create symbolic links on this host: {error}")
+        result = self.invoke_script()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("symbolic links or junctions", result.stderr)
         self.assertEqual(self.curl_calls(), [])
 
     def test_failed_login_or_destination_check_prevents_upload(self):

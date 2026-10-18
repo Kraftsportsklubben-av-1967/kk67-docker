@@ -71,6 +71,37 @@ if (-not $PSCmdlet.ShouldProcess($destination,
 }
 
 $curl = Get-Command curl.exe -ErrorAction Stop
+$envFile = Join-Path (Split-Path -Parent $PSScriptRoot) '.env'
+if ($null -eq $Credential -and (Test-Path -LiteralPath $envFile -PathType Leaf)) {
+    $node = Get-Command node -ErrorAction Stop
+    $readEnv = @'
+const { readFileSync } = require('node:fs');
+const { parseEnv } = require('node:util');
+if (typeof parseEnv !== 'function') {
+    console.error('Reading saved FTP credentials requires Node.js 20.12 or newer.');
+    process.exit(1);
+}
+const values = parseEnv(readFileSync(process.argv[1], 'utf8'));
+process.stdout.write(JSON.stringify({
+    username: values.FTP_USERNAME ?? '',
+    password: values.FTP_PASSWORD ?? ''
+}));
+'@
+    $savedCredentialJson = & $node --input-type=commonjs -e $readEnv $envFile
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Could not read FTP credentials from the root .env. Nothing was uploaded.'
+    }
+    $savedCredential = ConvertFrom-Json -InputObject $savedCredentialJson
+    $hasUsername = -not [string]::IsNullOrEmpty($savedCredential.username)
+    $hasPassword = -not [string]::IsNullOrEmpty($savedCredential.password)
+    if ($hasUsername -ne $hasPassword) {
+        throw 'Set both FTP_USERNAME and FTP_PASSWORD in the root .env, or leave both empty to use the credential prompt.'
+    }
+    if ($hasUsername) {
+        $securePassword = ConvertTo-SecureString $savedCredential.password -AsPlainText -Force
+        $Credential = [PSCredential]::new($savedCredential.username, $securePassword)
+    }
+}
 if ($null -eq $Credential) {
     $Credential = Get-Credential -Message "FTP credentials for $FtpHost"
 }

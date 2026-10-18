@@ -31,9 +31,12 @@ $ git clone --recurse-submodules git@github.com:Kraftsportsklubben-av-1967/kk67
 > $ git submodule update --init --recursive
 > ```
 
-2. Follow the setup guides in each submodule to configure their `.env` files
+2. Copy `.env.example` to `.env` in the repository root. This local file is
+   Git-ignored; keep secrets out of `.env.example`.
 
-3. Build the compose `docker-compose up --build`
+3. Follow the setup guides in each submodule to configure their `.env` files
+
+4. Build the compose `docker-compose up --build`
 
 > After this is done you can simply use `docker-compose up`
 
@@ -65,8 +68,8 @@ and uploads the **contents** of its `dist` folder. The default destination is
 `c9ry3m6by_kk67ctcg/webroots/r1058728`, relative to the FTP login directory.
 The destination must already exist.
 
-Use PowerShell 7, Node.js, Yarn, and `curl.exe` with FTP/FTPS support. Install
-the frontend dependencies first if needed:
+Use PowerShell 7, Node.js 20.12 or newer, Yarn, and `curl.exe` with FTP/FTPS
+support. Install the frontend dependencies first if needed:
 
 ```powershell
 yarn --cwd .\webroot\kk67-frontend install --frozen-lockfile
@@ -85,11 +88,24 @@ Build and upload to the live site:
 pwsh -File .\scripts\upload-frontend.ps1
 ```
 
-The script prompts securely for the FTP username and password. Credentials are
-passed to curl through standard input, never saved in the repository or placed
-in curl's process arguments. For automation, pass a `PSCredential` obtained from
-your secret store using `-Credential`. Explicit FTPS is required, with certificate
-verification enabled; there is no fallback to unencrypted FTP.
+To save credentials, fill in these entries in the **repository-root `.env`**,
+not the frontend's `.env`:
+
+```dotenv
+FTP_USERNAME='your-ftp-username'
+FTP_PASSWORD='your-ftp-password'
+```
+
+Quote values containing spaces, `#`, or `$`. The script uses Node's built-in
+dotenv parser without executing the file or expanding variables. `.env` is
+Git-ignored and no longer tracked, but stores the password as **plaintext**;
+keep it private. Never put these secrets in `VITE_` variables.
+
+An explicit `-Credential` takes precedence over `.env`. If both saved values are
+empty or absent, the script prompts securely; if only one is set, it stops with
+an error. Credentials reach curl through standard input, not process arguments.
+`-WhatIf` neither reads saved credentials nor connects to the server. Explicit
+FTPS is required, with certificate verification enabled and no unencrypted fallback.
 
 Use `-SkipBuild` to upload an existing `dist`, or combine it with `-WhatIf` to
 preview without rebuilding. `-FtpHost` and `-RemotePath` override the destination.

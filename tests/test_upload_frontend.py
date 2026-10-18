@@ -9,6 +9,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 PWSH = shutil.which("pwsh")
+NODE = shutil.which("node")
 DESTINATION = (
     "ftp://ftp.c9ry3m6by.service.one/"
     "c9ry3m6by_kk67ctcg/webroots/r1058728/"
@@ -24,7 +25,8 @@ class FrontendUploadTests(unittest.TestCase):
     def setUp(self):
         self.temporary_directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary_directory.cleanup)
-        self.root = Path(self.temporary_directory.name)
+        self.root = Path(self.temporary_directory.name).joinpath("repo with spaces")
+        self.root.mkdir()
         self.script = self.root.joinpath("scripts", "upload-frontend.ps1")
         self.script.parent.mkdir()
         shutil.copyfile(ROOT.joinpath("scripts", self.script.name), self.script)
@@ -45,6 +47,8 @@ class FrontendUploadTests(unittest.TestCase):
         self.frontend.joinpath(".htaccess").write_text("routing", encoding="utf-8")
         self.curl_log = self.root.joinpath("curl.jsonl")
         self.build_log = self.root.joinpath("build.json")
+        self.prompt_log = self.root.joinpath("prompt.txt")
+        self.env_file = self.root.joinpath(".env")
         self.password = 'pass "quoted" \\ : $value & end'
 
     def invoke_script(self, arguments="-SkipBuild", credential=True, **overrides):
@@ -53,6 +57,8 @@ class FrontendUploadTests(unittest.TestCase):
             {
                 "KK67_TEST_CURL_LOG": str(self.curl_log),
                 "KK67_TEST_BUILD_LOG": str(self.build_log),
+                "KK67_TEST_PROMPT_LOG": str(self.prompt_log),
+                "KK67_TEST_ALLOW_PROMPT": "0",
                 "KK67_TEST_BUILD_EXIT": "0",
                 "KK67_TEST_PREFLIGHT_EXIT": "0",
                 "KK67_TEST_UPLOAD_EXIT": "0",
@@ -85,10 +91,15 @@ function curl.exe {
     }
 }
 function Get-Credential {
-    throw 'Unexpected interactive credential prompt.'
+    if ($env:KK67_TEST_ALLOW_PROMPT -ne '1') {
+        throw 'Unexpected interactive credential prompt.'
+    }
+    Set-Content -LiteralPath $env:KK67_TEST_PROMPT_LOG -Value 'prompted' -WhatIf:$false
+    return $global:KK67TestCredential
 }
 $securePassword = ConvertTo-SecureString $env:KK67_TEST_PASSWORD -AsPlainText -Force
 $credential = [PSCredential]::new('ftp-user', $securePassword)
+$global:KK67TestCredential = $credential
 """
         credential_argument = "-Credential $credential" if credential else ""
         return subprocess.run(
@@ -121,6 +132,7 @@ $credential = [PSCredential]::new('ftp-user', $securePassword)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_whatif_never_connects_or_prompts_for_credentials(self):
+        self.env_file.write_text("FTP_USERNAME=incomplete\n", encoding="utf-8")
         result = self.invoke_script("-SkipBuild -WhatIf", credential=False)
         self.assert_success(result)
         self.assertIn(DESTINATION, result.stdout)
@@ -136,6 +148,68 @@ $credential = [PSCredential]::new('ftp-user', $securePassword)
         self.assertEqual(build["arguments"], ["build"])
         self.assertEqual(Path(build["directory"]).resolve(), self.frontend.resolve())
         self.assertEqual(self.curl_calls(), [])
+
+    @unittest.skipUnless(NODE, "Node.js 20.12+ is required for saved credentials")
+    def test_reads_saved_credentials_with_real_dotenv_parser(self):
+        self.password += " # = \u00f8"
+        self.env_file.write_text(
+            "FE_PORT=3000\n"
+            "export FTP_USERNAME='saved-user'\n"
+            f"FTP_PASSWORD='{self.password}' # outside the password\n"
+            "NODE_OPTIONS='--require=does-not-exist'\n",
+            encoding="utf-8",
+        )
+        result = self.invoke_script(credential=False)
+        self.assert_success(result)
+        escaped = self.password.replace("\\", "\\\\").replace('"', '\\"')
+        calls = self.curl_calls()
+        self.assertEqual(len(calls), 5)
+        for call in calls:
+            self.assertEqual(call["config"], f'user = "saved-user:{escaped}"')
+            self.assertNotIn(self.password, " ".join(call["arguments"]))
+        self.assertNotIn(self.password, result.stdout + result.stderr)
+        self.assertFalse(self.prompt_log.exists())
+
+    def test_explicit_credential_overrides_incomplete_env(self):
+        self.env_file.write_text("FTP_USERNAME=ignored-user\n", encoding="utf-8")
+        result = self.invoke_script()
+        self.assert_success(result)
+        self.assertTrue(self.curl_calls())
+        for call in self.curl_calls():
+            self.assertTrue(call["config"].startswith('user = "ftp-user:'))
+            self.assertNotIn("ignored-user", call["config"])
+
+    @unittest.skipUnless(NODE, "Node.js 20.12+ is required for saved credentials")
+    def test_partial_saved_credentials_fail_without_prompting_or_uploading(self):
+        for contents in (
+            "FTP_USERNAME=saved-user\n",
+            f"FTP_PASSWORD='{self.password}'\n",
+        ):
+            with self.subTest(contents=contents.split("=")[0]):
+                self.env_file.write_text(contents, encoding="utf-8")
+                result = self.invoke_script(credential=False)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("Set both FTP_USERNAME and FTP_PASSWORD", result.stderr)
+                self.assertEqual(self.curl_calls(), [])
+                self.assertFalse(self.prompt_log.exists())
+                self.assertNotIn(self.password, result.stdout + result.stderr)
+
+    @unittest.skipUnless(NODE, "Node.js 20.12+ is required for saved credentials")
+    def test_absent_or_empty_saved_credentials_keep_secure_prompt(self):
+        for contents in (
+            "FE_PORT=3000\n",
+            "FTP_USERNAME=''\nFTP_PASSWORD=''\n",
+        ):
+            with self.subTest(contents=contents):
+                self.curl_log.unlink(missing_ok=True)
+                self.prompt_log.unlink(missing_ok=True)
+                self.env_file.write_text(contents, encoding="utf-8")
+                result = self.invoke_script(
+                    credential=False, KK67_TEST_ALLOW_PROMPT="1"
+                )
+                self.assert_success(result)
+                self.assertTrue(self.prompt_log.exists())
+                self.assertEqual(len(self.curl_calls()), 5)
 
     def test_uploads_only_build_files_with_index_last_and_no_deletions(self):
         result = self.invoke_script()

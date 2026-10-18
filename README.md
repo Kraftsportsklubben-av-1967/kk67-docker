@@ -60,102 +60,24 @@ starting containers:
 python -m unittest discover -s tests
 ```
 
-## Frontend deployment (FTPS)
+## Deployments
 
-`scripts\upload-frontend.ps1` builds `webroot\kk67-frontend` with `yarn build`
-and uploads the **contents** of its `dist` folder. The default destination is
-`ftp.c9ry3m6by.service.one`, directory
-`webroots/r1058728`, relative to the FTP login directory. The hosting file
-manager's account-name prefix is not part of the FTP path. The destination
-must already exist.
+Each application owns its upload scripts, tests and GitHub Actions workflow:
 
-Use PowerShell 7, Node.js 20.12 or newer, Yarn, and `curl.exe` with FTP/FTPS
-support. Install the frontend dependencies first if needed:
+- [Frontend deployment](https://github.com/Kraftsportsklubben-av-1967/kk67-frontend#production-ci)
+- [PHP backend deployment](https://github.com/Kraftsportsklubben-av-1967/kk67-backend-php)
 
-```powershell
-yarn --cwd .\webroot\kk67-frontend install --frozen-lockfile
-```
+Their CI checks out only the application itself; it does not clone this Docker
+repository or fetch deployment scripts from another project. Production uploads
+run after merges or pushes to frontend `master` and PHP backend `main`.
 
-Build and preview the destination and file count without connecting or asking
-for credentials:
+Existing FTP credentials can stay in this repository's private, ignored `.env`.
+Pass that file's path with the application uploader's `-EnvFilePath` option;
+there is no need to copy the password. Explicit `-Credential` takes precedence.
+CI uses encrypted application-repository secrets instead of a local file.
 
-```powershell
-pwsh -File .\scripts\upload-frontend.ps1 -WhatIf
-```
-
-Build and upload to the live site:
-
-```powershell
-pwsh -File .\scripts\upload-frontend.ps1
-```
-
-To save credentials, fill in these entries in the **repository-root `.env`**,
-not the frontend's `.env`:
-
-```dotenv
-FTP_USERNAME='your-ftp-username'
-FTP_PASSWORD='your-ftp-password'
-```
-
-Quote values containing spaces, `#`, or `$`. The script uses Node's built-in
-dotenv parser without executing the file or expanding variables. `.env` is
-Git-ignored and no longer tracked; its Vim backup/undo files are ignored too.
-The password is stored as **plaintext** locally; keep it private. Never put
-these secrets in `VITE_` variables.
-
-An explicit `-Credential` takes precedence over `.env`. If both saved values are
-empty or absent, the script prompts securely; if only one is set, it stops with
-an error. Credentials reach curl through standard input, not process arguments.
-`-WhatIf` neither reads saved credentials nor connects to the server. Explicit
-FTPS is required, with certificate verification enabled and no unencrypted fallback.
-
-Use `-SkipBuild` to upload an existing `dist`, or combine it with `-WhatIf` to
-preview without rebuilding. `-FtpHost` and `-RemotePath` override the destination.
-The script creates asset subdirectories, overwrites matching files, and uploads
-`index.html` last. It **never deletes remote files**, so backend files and
-separately uploaded media absent from the build are preserved. A local video
-included in `dist` will be uploaded along with the other frontend assets.
-
-Only build output is uploaded: frontend source, `.env`, the backend, and the
-frontend root's `.htaccess` are not included. Keep the server's existing SPA
-routing configuration. Upload failures stop deployment, but files already
-uploaded are not rolled back; the upload is not atomic.
-
-## PHP backend deployment (FTPS)
-
-`scripts\upload-backend-php.ps1` packages the PHP backend from
-`webroot\kk67-backend-php` for `webroots/r1058768` on the same FTP host.
-It uploads only `src\index.php` and `src\loader.php`, flattened into the
-document root, after PHP syntax checks and the application's smoke test.
-The current application has no Composer dependencies; adding them requires
-updating the explicit package and its tests first.
-
-Use PowerShell 7, PHP 8.3 or newer, and `curl.exe`. Saved root `.env` credentials
-use the same Node.js parser and precedence described above.
-
-```powershell
-pwsh -File .\scripts\upload-backend-php.ps1 -WhatIf
-pwsh -File .\scripts\upload-backend-php.ps1
-```
-
-`-WhatIf` still creates and checks a temporary local package, then removes it,
-without reading FTP credentials or connecting. `-AppPath` selects another
-backend checkout. Server-side settings, `.env`, rewrite rules, logs and writable
-data are not uploaded or deleted. `index.php` is uploaded last; uploads are not
-atomic and are not rolled back on failure.
-
-## Merge-triggered deployments
-
-Deployment workflows live in each application's repository, not this Docker
-repository. They check pull requests and deploy only after a merge or push to the
-application's default branch: frontend `master`, PHP backend `main`. Both use the
-shared FTPS transport in `scripts\ftps.psm1`, with this repository pinned to a
-reviewed commit.
-
-Store `FTP_USERNAME` and `FTP_PASSWORD` as encrypted GitHub Actions secrets in each
-application repository. The frontend also needs `VITE_GOOGLE_API_KEY` for its
-production build. CI passes credentials explicitly; it never commits or uploads
-the local `.env`. New merges do not cancel an active production upload.
+Keep `.env` and editor backups private. Saved local passwords are plaintext;
+never commit them or put FTP secrets in `VITE_` variables.
 
 ## Why docker-compose?
 

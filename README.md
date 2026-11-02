@@ -68,9 +68,9 @@ Each application owns its upload scripts, tests and GitHub Actions workflow:
 - [PHP backend deployment](https://github.com/Kraftsportsklubben-av-1967/kk67-backend-php)
 
 Their CI checks out only the application itself; it does not clone this Docker
-repository or fetch deployment scripts from another project. Pull requests and
-pushes still run checks, but merges and direct pushes **do not deploy**.
-Production uploads require **Actions > Run workflow** in the application
+repository or fetch deployment scripts from another project. Both workflows are
+**manual-only**: pull requests, merges and direct pushes **do not run CI or deploy**.
+Start checks and uploads through **Actions > Run workflow** in the application
 repository, selecting frontend `master` or PHP backend `main`. Each manual run
 validates its commit before uploading directly from the runner, without retaining
 an Actions build artifact. See the application guides above for CLI commands.

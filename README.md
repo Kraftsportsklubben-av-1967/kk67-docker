@@ -68,8 +68,12 @@ Each application owns its upload scripts, tests and GitHub Actions workflow:
 - [PHP backend deployment](https://github.com/Kraftsportsklubben-av-1967/kk67-backend-php)
 
 Their CI checks out only the application itself; it does not clone this Docker
-repository or fetch deployment scripts from another project. Production uploads
-run after merges or pushes to frontend `master` and PHP backend `main`.
+repository or fetch deployment scripts from another project. Both workflows are
+**manual-only**: pull requests, merges and direct pushes **do not run CI or deploy**.
+Start checks and uploads through **Actions > Run workflow** in the application
+repository, selecting frontend `master` or PHP backend `main`. Each manual run
+validates its commit before uploading directly from the runner, without retaining
+an Actions build artifact. See the application guides above for CLI commands.
 
 Existing FTP credentials can stay in this repository's private, ignored `.env`.
 Pass that file's path with the application uploader's `-EnvFilePath` option;
